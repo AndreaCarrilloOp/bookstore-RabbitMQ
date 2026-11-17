@@ -17,7 +17,7 @@
     "vite": "^6.3.0"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "22.x"
   },
   "description": "Frontend Vue de Bookstore"
 }
