@@ -1,0 +1,31 @@
+name: Bookstore quality
+
+on:
+  push:
+    branches: [main, "refactor/**", "feature/**"]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install backend packages
+        run: npm install --omit=dev --no-audit --no-fund
+      - name: Test queue processing and validation
+        run: npm test
+      - name: Install frontend packages
+        working-directory: frontend
+        run: npm install --no-audit --no-fund
+      - name: Build Vue frontend
+        working-directory: frontend
+        run: npm run build
