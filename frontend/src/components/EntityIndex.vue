@@ -1,22 +1,22 @@
 <template>
   <section class="content">
     <header class="page-heading">
-      <h2>{{ config.plural }}</h2>
+      <h1>{{ config.plural }}</h1>
       <router-link class="button button-primary" :to="`/${entity}/create`">Agregar {{ config.singular }}</router-link>
     </header>
     <p v-if="message" class="notice" role="status">{{ message }}</p>
     <p v-if="error" class="error" role="alert">{{ error }}</p>
-    <div class="toolbar"><button class="button" :disabled="loading" @click="load">{{ loading ? 'Consultando…' : 'Actualizar' }}</button></div>
+    <div class="toolbar"><button type="button" class="button" :disabled="loading" @click="load">{{ loading ? 'Consultando…' : 'Actualizar' }}</button></div>
     <div v-if="loading && !items.length" class="empty">Cargando información…</div>
     <div v-else-if="!items.length" class="empty">No hay registros.</div>
-    <div v-else class="table-wrap"><table class="u-full-width">
+    <div v-else class="table-wrap" tabindex="0" role="region" :aria-label="`Tabla de ${config.plural}`"><table class="u-full-width">
       <thead><tr><th v-for="col in config.columns" :key="col.key">{{ col.label }}</th><th>Acciones</th></tr></thead>
       <tbody><tr v-for="item in items" :key="item._id">
         <td v-for="col in config.columns" :key="col.key">{{ item[col.key] ?? '—' }}</td>
         <td class="actions">
           <router-link class="button button-small" :to="`/${entity}/show/${item._id}`">Ver</router-link>
           <router-link class="button button-small" :to="`/${entity}/edit/${item._id}`">Editar</router-link>
-          <button class="button button-small danger" :disabled="deletingId === item._id" @click="remove(item)">Eliminar</button>
+          <button type="button" class="button button-small danger" :disabled="deletingId === item._id" :aria-label="`Eliminar ${config.singular} ${item._id}`" @click="remove(item)">Eliminar</button>
         </td>
       </tr></tbody>
     </table></div>
@@ -41,7 +41,7 @@ async function remove(item) {
   deletingId.value = item._id; error.value = '';
   try {
     await callFunction(`${props.entity}Delete`, { method: 'DELETE', id: item._id });
-    message.value = 'Solicitud enviada.';
+    message.value = 'Eliminación encolada. El registro seguirá visible hasta que se procesen las tareas.';
   } catch (err) { error.value = err.message; }
   finally { deletingId.value = null; }
 }
