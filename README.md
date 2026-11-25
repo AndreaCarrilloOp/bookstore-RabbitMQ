@@ -1,5 +1,7 @@
 # Bookstore RabbitMQ
 
+[![Quality checks](https://github.com/AndreaCarrilloOp/bookstore-RabbitMQ/actions/workflows/quality.yml/badge.svg)](https://github.com/AndreaCarrilloOp/bookstore-RabbitMQ/actions/workflows/quality.yml)
+
 A distributed bookstore catalog built with Vue 3, Netlify Functions, RabbitMQ (CloudAMQP) and MongoDB Atlas. Read operations query MongoDB directly, while write operations are queued and applied through entity-specific task processors and batch functions.
 
 [![Frontend](https://img.shields.io/badge/Frontend-Vercel-000000?logo=vercel&logoColor=white)](https://bookstore-rabbitmq.vercel.app/)
@@ -26,7 +28,8 @@ A distributed bookstore catalog built with Vue 3, Netlify Functions, RabbitMQ (C
 - Consumer acknowledgements after successful database operations; failed messages are requeued.
 - MongoDB Atlas persistence with numeric identifiers and existing catalog schemas.
 - Independent frontend and serverless backend deployments.
-- Manual task execution outside the catalog UI, following the course workflow.
+- Manual authenticated task execution outside the catalog UI, following the course workflow.
+- Client-side feedback that distinguishes queued requests from completed database writes.
 
 ## Architecture
 
@@ -113,7 +116,7 @@ This illustrates a message format; the actual identifier and fields depend on th
 
 ### Prerequisites
 
-- Node.js 22 and npm.
+- Node.js 22 LTS and npm.
 - A CloudAMQP instance with an AMQP connection URL.
 - A MongoDB Atlas cluster, a database user with access to `bookstore`, and an authorized network address.
 
@@ -132,7 +135,7 @@ Copy `.env.example` to `.env` in the repository root and configure the backend e
 CLOUDAMQP_URL=amqps://USERNAME:PASSWORD@HOST/VHOST
 MONGODB_URI=mongodb+srv://USERNAME:PASSWORD@CLUSTER.mongodb.net/bookstore
 MONGODB_DB=bookstore
-TASKS_TOKEN=
+TASKS_TOKEN=REPLACE_WITH_A_LONG_RANDOM_SECRET
 TASKS_BATCH_SIZE=20
 ```
 
@@ -185,7 +188,9 @@ Example local response after one successful operation (illustrative):
 }
 ```
 
-If `remaining` is `true`, another invocation may be needed. If `TASKS_TOKEN` is configured, send the `x-tasks-token` header from a trusted HTTP client. Never place this token in a Vite environment variable. The Tasks endpoints perform writes despite using GET in this academic implementation; they are not health checks.
+If `remaining` is `true`, another invocation may be needed. The `TASKS_TOKEN` variable is **required** to invoke any `*Tasks` processor. Without it the endpoint returns `503`; with an invalid token it returns `401`. Send the `x-tasks-token` header from a trusted HTTP client only. Never put the token in `VITE_*` variables or browser code. Generate a unique secret for production (for example, `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`).
+
+The Tasks endpoints use GET for **compatibility with the academic assignment**, but they consume queues and modify database state; treat them as administrative operations, not health checks.
 
 ## Deployment
 
@@ -198,7 +203,7 @@ If `remaining` is `true`, another invocation may be needed. If `TASKS_TOKEN` is 
 | Publish directory | `public` |
 | Functions directory | `netlify/functions` |
 
-Configure `CLOUDAMQP_URL`, `MONGODB_URI`, `MONGODB_DB`, `TASKS_BATCH_SIZE` and, optionally, `TASKS_TOKEN` as backend environment variables. Ensure the deployed backend can reach both cloud services.
+Configure `CLOUDAMQP_URL`, `MONGODB_URI`, `MONGODB_DB`, `TASKS_BATCH_SIZE` and a **required** `TASKS_TOKEN` as backend environment variables. Ensure the deployed backend can reach both cloud services.
 
 ### Vercel — frontend
 
@@ -213,6 +218,22 @@ Configure `CLOUDAMQP_URL`, `MONGODB_URI`, `MONGODB_DB`, `TASKS_BATCH_SIZE` and, 
 | `VITE_API_BASE` | `https://bookstore-rabbitmq.netlify.app` |
 
 The frontend environment contains only the public API base URL. Database and messaging credentials belong exclusively to the backend.
+
+## Security and quality
+
+The public frontend demonstrates CRUD against a class-project backend. **Public write endpoints are not authenticated**; deploy only with non-sensitive demonstration data. Before using this architecture with real users, add identity-based authorization, rate limiting and abuse prevention to the write endpoints. A CORS header does **not** provide authorization.
+
+The repository includes automated backend tests and a Vite production build check. From the root:
+
+```bash
+npm install
+npm test
+cd frontend
+npm install
+npm run build
+```
+
+No real RabbitMQ or MongoDB services are required for the unit tests: the consumer is tested with a mocked channel. Verify the live integrations separately in a controlled environment.
 
 ## Academic context
 
