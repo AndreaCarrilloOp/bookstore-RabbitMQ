@@ -14,10 +14,21 @@ function preflight(event) {
 function badMethod(event, method) {
   return event.httpMethod !== method ? reply(405, { error: `Se requiere ${method}` }) : null;
 }
+class ClientInputError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'ClientInputError';
+  }
+}
 function parseBody(event) {
-  if (!event.body) throw new Error('Falta el cuerpo JSON');
-  const obj = JSON.parse(event.body);
-  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) throw new Error('El cuerpo debe ser un objeto JSON');
+  if (!event.body) throw new ClientInputError('Falta el cuerpo JSON');
+  if (Buffer.byteLength(event.body, 'utf8') > 32768)
+    throw new ClientInputError('El cuerpo JSON supera el límite de 32 KiB');
+  let obj;
+  try { obj = JSON.parse(event.body); }
+  catch { throw new ClientInputError('JSON inválido'); }
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj))
+    throw new ClientInputError('El cuerpo debe ser un objeto JSON');
   return obj;
 }
 function numericId(raw) {
@@ -30,9 +41,10 @@ function idFromEvent(event) {
   return numericId(parts.at(-1));
 }
 function errorReply(error) {
-  const expected = /JSON|identificador|Falta|debe|Campo|No se permiten|vacío/i.test(error.message);
+  const expected = error instanceof ClientInputError ||
+    /JSON|identificador|Falta|debe|Campo|No se permiten|vacío|arreglo|Operación/i.test(error.message);
   const code = expected ? 400 : 502;
   if (!expected) console.error('[backend]', error);
   return reply(code, { error: expected ? error.message : 'No fue posible procesar la solicitud' });
 }
-module.exports = { reply, preflight, badMethod, parseBody, numericId, idFromEvent, errorReply };
+module.exports = { reply, preflight, badMethod, parseBody, numericId, idFromEvent, errorReply, ClientInputError };

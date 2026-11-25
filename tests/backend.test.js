@@ -52,3 +52,35 @@ test('fallo en batch: mensaje se reencola sin ACK', async () => {
   assert.equal(requested, 1); assert.equal(acked, 0); assert.equal(requeued, 1);
   assert.match(result.errors[0], /MongoDB/);
 });
+
+test('solicitudes JSON inválidas devuelven 400, no 502', () => {
+  const { parseBody, errorReply } = require('../netlify/lib/http');
+  for (const body of ['{', '[]', '"cadena"', ' '.repeat(32769)]) {
+    try { parseBody({ body }); assert.fail('Debe rechazar cuerpo inválido'); }
+    catch (error) {
+      assert.equal(errorReply(error).statusCode, 400);
+    }
+  }
+});
+test('procesadores Tasks requieren token y rechazan accesos no autorizados', async () => {
+  const { tasksHandler } = require('../netlify/lib/handlers');
+  const original = process.env.TASKS_TOKEN;
+  const handler = tasksHandler('book', {});
+  const event = { httpMethod: 'GET', headers: {} };
+  try {
+    delete process.env.TASKS_TOKEN;
+    assert.equal((await handler(event)).statusCode, 503);
+    process.env.TASKS_TOKEN = 'solo-pruebas';
+    assert.equal((await handler(event)).statusCode, 401);
+    assert.equal((await handler({ ...event, headers: { 'X-Tasks-Token': 'incorrecto' } })).statusCode, 401);
+  } finally {
+    if (original === undefined) delete process.env.TASKS_TOKEN;
+    else process.env.TASKS_TOKEN = original;
+  }
+});
+test('arreglos excesivos son rechazados', () => {
+  assert.throws(
+    () => normalizeDocument('author', { author: 'Ada', books: Array(101).fill({ id: 1 }) }),
+    /máximo 100/
+  );
+});

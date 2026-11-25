@@ -17,7 +17,9 @@ function normalizeDocument(entity, source, { update = false } = {}) {
         throw new Error(`Campo ${field}: se requiere un número`);
       doc[field] = Number(value);
     } else if (type === 'array') {
-      if (!Array.isArray(value)) throw new Error(`Campo ${field}: se requiere un arreglo`);
+      if (!Array.isArray(value) || value.length > 100 ||
+          Buffer.byteLength(JSON.stringify(value), 'utf8') > 16384)
+        throw new Error(`Campo ${field}: se requiere un arreglo de máximo 100 elementos y 16 KiB`);
       doc[field] = value;
     }
   }

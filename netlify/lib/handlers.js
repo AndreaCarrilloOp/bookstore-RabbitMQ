@@ -51,8 +51,13 @@ function tasksHandler(entity, batchHandlers) {
     if (preflight(event)) return preflight(event);
     if (badMethod(event, 'GET')) return badMethod(event, 'GET');
     const token = process.env.TASKS_TOKEN;
-    if (token && (event.headers?.['x-tasks-token'] || event.headers?.['X-Tasks-Token']) !== token)
-      return reply(401, { error: 'Enviar la cabecera x-tasks-token correcta' });
+    // Task processors change database state: never expose them without authentication.
+    if (!token) return reply(503, { error: 'Procesamiento no disponible: configure TASKS_TOKEN' });
+    const headers = Object.fromEntries(
+      Object.entries(event.headers || {}).map(([key, value]) => [key.toLowerCase(), value])
+    );
+    if (headers['x-tasks-token'] !== token)
+      return reply(401, { error: 'Se requiere una cabecera x-tasks-token válida' });
     let connection;
     let channel;
     try {
