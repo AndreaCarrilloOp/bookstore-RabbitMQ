@@ -221,7 +221,7 @@ The frontend environment contains only the public API base URL. Database and mes
 
 ## Security and quality
 
-The public frontend demonstrates CRUD against a class-project backend. **Public write endpoints are not authenticated**; deploy only with non-sensitive demonstration data. Before using this architecture with real users, add identity-based authorization, rate limiting and abuse prevention to the write endpoints. A CORS header does **not** provide authorization.
+The public frontend demonstrates CRUD against a class-project backend. **Public write endpoints are not authenticated**; deploy only with non-sensitive demonstration data. Optionally configure `CORS_ORIGIN=https://bookstore-rabbitmq.vercel.app` to restrict browsers to the known frontend origin (local development may leave this unset). Before using this architecture with real users, add identity-based authorization, rate limiting and abuse prevention to the write endpoints. A CORS header does **not** provide authorization.
 
 The repository includes automated backend tests and a Vite production build check. From the root:
 

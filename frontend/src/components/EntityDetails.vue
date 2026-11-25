@@ -4,7 +4,8 @@
     <p v-if="error" class="error" role="alert">{{ error }}</p>
     <p v-if="message" class="notice" role="status">{{ message }}</p>
     <p v-if="loading">Cargando datos…</p>
-    <form v-else-if="!loadFailed" @submit.prevent="submit">
+    <router-link v-else-if="loadFailed" class="button" :to="`/${entity}`">Volver a {{ config.plural.toLowerCase() }}</router-link>
+    <form v-else @submit.prevent="submit">
       <p v-if="mode !== 'show'" class="hint">Las solicitudes se encolan en RabbitMQ y se aplican cuando se ejecuta el procesador correspondiente.</p>
       <div class="form-grid">
         <div v-for="field in config.fields" :key="field.key">

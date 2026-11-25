@@ -13,10 +13,12 @@
       <thead><tr><th v-for="col in config.columns" :key="col.key">{{ col.label }}</th><th>Acciones</th></tr></thead>
       <tbody><tr v-for="item in items" :key="item._id">
         <td v-for="col in config.columns" :key="col.key">{{ item[col.key] ?? '—' }}</td>
-        <td class="actions">
-          <router-link class="button button-small" :to="`/${entity}/show/${item._id}`">Ver</router-link>
-          <router-link class="button button-small" :to="`/${entity}/edit/${item._id}`">Editar</router-link>
-          <button type="button" class="button button-small danger" :disabled="deletingId === item._id" :aria-label="`Eliminar ${config.singular} ${item._id}`" @click="remove(item)">Eliminar</button>
+        <td>
+          <div class="actions">
+            <router-link class="button button-small" :to="`/${entity}/show/${item._id}`">Ver</router-link>
+            <router-link class="button button-small" :to="`/${entity}/edit/${item._id}`">Editar</router-link>
+            <button type="button" class="button button-small danger" :disabled="deletingId === item._id" :aria-label="`Eliminar ${config.singular} ${item._id}`" @click="remove(item)">Eliminar</button>
+          </div>
         </td>
       </tr></tbody>
     </table></div>
